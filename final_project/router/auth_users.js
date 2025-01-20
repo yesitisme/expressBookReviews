@@ -4,7 +4,7 @@ const session = require('express-session')
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
-regd_users.use(session({ secret: "fingerpint" }, resave = true, saveUninitialized = true));
+regd_users.use(session({ secret: "fingerpint" , resave : true, saveUninitialized : true}));
 const secretKey = 'MyBestProjectEver';
 
 
@@ -40,13 +40,14 @@ regd_users.post("/login", (req, res) => {
     if (authenticatedUser(username, password)) {
         // Generate JWT access token
         let accessToken = jwt.sign({
-            data: password
-        }, 'access', { expiresIn: 60 * 60 });
+            data: username
+        }, secretKey, { expiresIn: 60 * 60 });
 
         // Store access token and username in session
         req.session.authorization = {
             accessToken, username
         }
+        //console.log(req.session);
         return res.status(200).send("User successfully logged in");
     } else {
         return res.status(208).json({ message: "Invalid Login. Check username and password" });
@@ -56,7 +57,28 @@ regd_users.post("/login", (req, res) => {
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
     //Write your code here
-    return res.status(300).json({ message: "Yet to be implemented" });
+    let isbn = req.params.isbn;
+    let review = req.query.review;
+    let username = req.session.authorization.username;
+    let book =  books[isbn];
+//console.log(username, review)
+    if(!username || !review){
+        return res.status(400).json({message: "User Name And review is required"})
+    } 
+       
+        if(book){
+            if (!book.reviews) {
+                book.reviews = {};
+            }
+    
+            // Update or add the review
+            book.reviews[username] = review;
+
+        return res.json({Message: "Added review by user: "+ username + ", review: " +review })
+       
+    }
+
+    return res.status(300).json({ message: "Review not Yet to be implemented" });
 });
 
 module.exports.authenticated = regd_users;
