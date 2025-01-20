@@ -4,7 +4,7 @@ const session = require('express-session')
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
-regd_users.use(session({ secret: "fingerpint" , resave : true, saveUninitialized : true}));
+regd_users.use(session({ secret: "fingerpint", resave: true, saveUninitialized: true }));
 const secretKey = 'MyBestProjectEver';
 
 
@@ -60,25 +60,45 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     let isbn = req.params.isbn;
     let review = req.query.review;
     let username = req.session.authorization.username;
-    let book =  books[isbn];
-//console.log(username, review)
-    if(!username || !review){
-        return res.status(400).json({message: "User Name And review is required"})
-    } 
-       
-        if(book){
-            if (!book.reviews) {
-                book.reviews = {};
-            }
-    
-            // Update or add the review
-            book.reviews[username] = review;
+    let book = books[isbn];
+    //console.log(username, review)
+    if (!username || !review) {
+        return res.status(400).json({ message: "User Name And review is required" })
+    }
 
-        return res.json({Message: "Added review by user: "+ username + ", review: " +review })
-       
+    if (book) {
+        if (!book.reviews) {
+            book.reviews = {};
+        }
+
+        // Update or add the review
+        book.reviews[username] = review;
+
+        return res.json({ Message: "Added review by user: " + username + ", review: " + review })
+
     }
 
     return res.status(300).json({ message: "Review not Yet to be implemented" });
+});
+
+// Delete review from user
+
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    let user = req.session.authorization?.username;
+    let isbn = req.params.isbn;
+
+    if (!user) {
+        return res.status(400).json({ message: "Username is required" });
+    }
+
+    let book = books[isbn];
+    if (book.reviews[user]) {
+        let myreview = book.reviews[user];
+        delete book.reviews[user];
+        res.json({ message: "Review: " + myreview + ", from user:" + user + " has been deleted" })
+    } else {
+        res.json({message: "No review to delete"});
+    }
 });
 
 module.exports.authenticated = regd_users;
